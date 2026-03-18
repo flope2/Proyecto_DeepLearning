@@ -1,16 +1,18 @@
-
 import feedparser
 import trafilatura
 
 FUENTES_ABIERTAS = {
-    "RTVE":      "https://www.rtve.es/api/noticias.rss",
-    "ABC":       "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
-    "Antena 3":  "https://www.antena3.com/rss/noticias.xml",
-    "ElDiario":  "https://www.eldiario.es/rss/"
+    "ABC":           "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
+    "ElDiario":      "https://www.eldiario.es/rss/",
+    "Europa Press":  "https://www.europapress.es/rss/rss.aspx",
+    "La Vanguardia": "https://www.lavanguardia.com/rss/home.xml",
+    "20minutos":     "https://www.20minutos.es/rss/",
+    "Antena 3":      "https://news.google.com/rss/search?q=site:antena3.com&hl=es&gl=ES&ceid=ES:es",
+    "RTVE":          "https://news.google.com/rss/search?q=site:rtve.es&hl=es&gl=ES&ceid=ES:es",
 }
 
 FUENTES_PAYWALL = {
-    "El País":  "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
+    "El Pais":  "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
     "El Mundo": "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml"
 }
 
