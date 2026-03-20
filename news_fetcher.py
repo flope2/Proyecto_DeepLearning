@@ -1,5 +1,6 @@
 import feedparser
 import trafilatura
+import google.generativeai as genai
 
 FUENTES_ABIERTAS = {
     "ABC":           "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
@@ -105,3 +106,28 @@ def get_all_news(num_per_source=4):
     print("=" * 50)
 
     return all_articles
+
+def resumir_noticias(lista_articulos, modelo_ia):
+    print("\n" + "="*50)
+    print("INICIANDO RESUMEN CON Gemini")
+    print("="*50)
+
+    for i, art in enumerate(lista_articulos):
+        print(f"\nProcesando artículo {i+1}/{len(lista_articulos)}: {art['titulo'][:50]}...")
+        
+        prompt = f"""
+        Actúa como un periodista analítico y neutral. Haz un resumen breve, directo y totalmente objetivo de la siguiente noticia.
+        Título: {art['titulo']}
+        Fuente: {art['fuente']}
+        Texto: {art['texto_completo']}
+        """
+
+        try:
+            respuesta = modelo_ia.generate_content(prompt)
+            art["resumen_ia"] = respuesta.text
+            print(f"Resumen completado.")
+        except Exception as e:
+            print(f"Error al procesar con la IA: {e}")
+            art["resumen_ia"] = "Error al generar el resumen con IA."
+
+    return lista_articulos
