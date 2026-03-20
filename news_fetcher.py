@@ -123,16 +123,28 @@ def resumir_noticias(lista_articulos, modelo_ia):
         Texto: {art['texto_completo']}
         """
 
-        try:
-            respuesta = modelo_ia.generate_content(prompt)
-            art["resumen_ia"] = respuesta.text
-            print(f"Resumen completado.")
+        exito=False
+        intentos=0
 
-            if i < len(lista_articulos) - 1: 
-                            time.sleep(12)
+        while not exito and intentos < 3:
+            try:
+                respuesta = modelo_ia.generate_content(prompt)
+                art["resumen_ia"] = respuesta.text
+                print(f"Resumen completado.")
+                exito = True 
+                time.sleep(4)
 
-        except Exception as e:
-            print(f"Error al procesar con la IA: {e}")
-            art["resumen_ia"] = "Error al generar el resumen con IA."
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "Quota" in error_str:
+                    intentos += 1
+                    print(f"Límite de Google alcanzado. Esperando 60 segundos para reintentar (Intento {intentos}/3)...")
+                    time.sleep(60)
+                else:
+                    print(f"Error inesperado: {e}")
+                    art["resumen_ia"] = "Error al generar el resumen con IA."
+                    break
+        if not exito and "resumen_ia" not in art:
+            art["resumen_ia"] = "Fallo tras varios reintentos por límites de cuota."
 
     return lista_articulos
