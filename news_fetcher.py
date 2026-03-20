@@ -1,6 +1,7 @@
 import feedparser
 import trafilatura
 import google.generativeai as genai
+import time
 
 FUENTES_ABIERTAS = {
     "ABC":           "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
@@ -126,6 +127,10 @@ def resumir_noticias(lista_articulos, modelo_ia):
             respuesta = modelo_ia.generate_content(prompt)
             art["resumen_ia"] = respuesta.text
             print(f"Resumen completado.")
+
+            if i < len(lista_articulos) - 1: 
+                            time.sleep(12)
+
         except Exception as e:
             print(f"Error al procesar con la IA: {e}")
             art["resumen_ia"] = "Error al generar el resumen con IA."
