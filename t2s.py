@@ -16,23 +16,48 @@ VOCES_DISPONIBLES = {
 VOZ_DEFAULT = "es-ES-AlvaroNeural"
 
 
+def _segundos_a_vtt(segundos):
+    h  = int(segundos // 3600)
+    m  = int((segundos % 3600) // 60)
+    s  = int(segundos % 60)
+    ms = int((segundos % 1) * 1000)
+    return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+
+def _generar_vtt(palabras, ruta_salida, words_in_cue=4):
+    lineas = ["WEBVTT", ""]
+
+    for i in range(0, len(palabras), words_in_cue):
+        bloque = palabras[i : i + words_in_cue]
+        inicio = bloque[0]["offset"]  / 10_000_000
+        ultimo = bloque[-1]
+        fin    = (ultimo["offset"] + ultimo["duration"]) / 10_000_000
+        texto  = " ".join(p["text"] for p in bloque)
+
+        lineas.append(f"{_segundos_a_vtt(inicio)} --> {_segundos_a_vtt(fin)}")
+        lineas.append(texto)
+        lineas.append("")
+
+    with open(ruta_salida, "w", encoding="utf-8") as f:
+        f.write("\n".join(lineas))
+
+
 async def _generar_audio_con_subtitulos(texto, ruta_audio, ruta_subtitulos, voz):
     comunicador = edge_tts.Communicate(texto, voz)
-    sub_maker   = edge_tts.SubMaker()
+    palabras    = []
 
     with open(ruta_audio, "wb") as audio_file:
         async for chunk in comunicador.stream():
             if chunk["type"] == "audio":
                 audio_file.write(chunk["data"])
             elif chunk["type"] == "WordBoundary":
-                sub_maker.create_sub(
-                    (chunk["offset"], chunk["duration"]),
-                    chunk["text"]
-                )
+                palabras.append({
+                    "text":     chunk["text"],
+                    "offset":   chunk["offset"],
+                    "duration": chunk["duration"]
+                })
 
-    # Guardamos el archivo VTT con 4 palabras por subtítulo
-    with open(ruta_subtitulos, "w", encoding="utf-8") as sub_file:
-        sub_file.write(sub_maker.generate_subs(words_in_cue=4))
+    _generar_vtt(palabras, ruta_subtitulos, words_in_cue=4)
 
 
 def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
@@ -42,7 +67,6 @@ def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
     ruta_audio      = f"{carpeta}/audio_{timestamp}.mp3"
     ruta_subtitulos = f"{carpeta}/subtitulos_{timestamp}.vtt"
 
-    print(f"Generando audio y subtitulos...")
     print(f"  Voz:         {voz}")
     print(f"  Chars:       {len(texto_boletin)}")
     print(f"  Audio:       {ruta_audio}")
@@ -53,10 +77,7 @@ def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
     ))
 
     tamanyo_mb = os.path.getsize(ruta_audio) / (1024 * 1024)
-    print(f"Audio generado! ({tamanyo_mb:.2f} MB)")
-    print(f"Subtitulos generados!")
 
-    # Devolvemos ambas rutas como tupla
     return ruta_audio, ruta_subtitulos
 
 
