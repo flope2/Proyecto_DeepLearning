@@ -1,4 +1,3 @@
-codigo_news_fetcher = ""
 import feedparser
 import trafilatura
 
@@ -106,9 +105,3 @@ def get_all_news(num_per_source=4):
     print("=" * 50)
 
     return all_articles
-""
-
-with open("news_fetcher.py", "w", encoding="utf-8") as f:
-    f.write(codigo_news_fetcher)
-
-print("news_fetcher.py actualizado!")
