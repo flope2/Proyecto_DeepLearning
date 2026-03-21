@@ -148,3 +148,35 @@ def resumir_noticias(lista_articulos, modelo_ia):
             art["resumen_ia"] = "Fallo tras varios reintentos por límites de cuota."
 
     return lista_articulos
+
+def resumir_en_bloque(lista_articulos, modelo_ia):
+    print("\n" + "="*50)
+    print(f"INICIANDO RESUMEN EN BLOQUE ({len(lista_articulos)} noticias)")
+    print("="*50)
+
+    prompt = """
+    Actúa como un presentador de noticias analítico y neutral conduciendo un boletín informativo. 
+    A continuación te proporciono una lista de noticias completas. Quiero que leas todas y redactes un texto continuo donde hagas un resumen breve, directo y totalmente objetivo de cada una. 
+        
+    Utiliza transiciones naturales, fluidas y profesionales para pasar de una noticia a la otra, tal como se haría en un noticiero de radio o televisión.
+    Es fundamental que, de manera orgánica durante estas transiciones o al inicio de cada tema, menciones explícitamente la fuente de la noticia.
+    
+    AQUÍ TIENES LAS NOTICIAS:
+    \n\n
+    """
+
+    for i, art in enumerate(lista_articulos):
+        prompt += f"--- NOTICIA {i+1} ---\n"
+        prompt += f"Título: {art['titulo']}\n"
+        prompt += f"Fuente: {art['fuente']}\n"
+        prompt += f"Texto completo: {art['texto_completo']}\n\n"
+
+    print("Resumiendo Noticias")
+
+    try:
+        respuesta = modelo_ia.generate_content(prompt)
+        print("¡Resúmenes generado con éxito!")
+        return respuesta.text
+    except Exception as e:
+        print(f"Error al procesar el bloque: {e}")
+        return None
