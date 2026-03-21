@@ -18,6 +18,9 @@ def resumir_en_bloque(lista_articulos, modelo_ia):
     tal como se haría en un noticiero de radio o televisión.
     Es fundamental que, de manera orgánica durante estas transiciones o al inicio de cada tema,
     menciones explícitamente la fuente de la noticia.
+    Evita usar asterísticos o cualquier formato que no sea el de un texto corrido, 
+    como si lo estuvieras narrando en vivo. Tampoco hagas referencia a expresiones 
+    faciales o corporales, ni al ambiente del estudio.
 
     AQUÍ TIENES LAS NOTICIAS:
     \n\n
