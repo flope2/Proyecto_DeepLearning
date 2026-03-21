@@ -1,7 +1,6 @@
+codigo_news_fetcher = ""
 import feedparser
 import trafilatura
-import google.generativeai as genai
-import time
 
 FUENTES_ABIERTAS = {
     "ABC":           "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
@@ -88,18 +87,18 @@ def get_all_news(num_per_source=4):
 
     all_articles = []
 
-    print("\n-> Leyendo RSS de todas las fuentes...")
+    print("\\n-> Leyendo RSS de todas las fuentes...")
     for source_name, feed_config in TODAS_LAS_FUENTES.items():
         articles = fetch_rss(source_name, feed_config, num_per_source)
         all_articles.extend(articles)
 
-    print(f"\n-> Extrayendo texto completo ({len(all_articles)} articulos)...")
+    print(f"\\n-> Extrayendo texto completo ({len(all_articles)} articulos)...")
     all_articles = [process_article(a) for a in all_articles]
 
     completos = sum(1 for a in all_articles if a["texto_origen"] == "completo")
     resumenes = sum(1 for a in all_articles if a["texto_origen"] == "resumen_rss")
 
-    print("\n" + "=" * 50)
+    print("\\n" + "=" * 50)
     print(f"RESULTADO FINAL")
     print(f"  Total articulos:  {len(all_articles)}")
     print(f"  Texto completo:   {completos}")
@@ -107,76 +106,9 @@ def get_all_news(num_per_source=4):
     print("=" * 50)
 
     return all_articles
+""
 
-def resumir_noticias(lista_articulos, modelo_ia):
-    print("\n" + "="*50)
-    print("INICIANDO RESUMEN CON Gemini")
-    print("="*50)
+with open("news_fetcher.py", "w", encoding="utf-8") as f:
+    f.write(codigo_news_fetcher)
 
-    for i, art in enumerate(lista_articulos):
-        print(f"\nProcesando artículo {i+1}/{len(lista_articulos)}: {art['titulo'][:50]}...")
-        
-        prompt = f"""
-        Actúa como un periodista analítico y neutral. Haz un resumen breve, directo y totalmente objetivo de la siguiente noticia.
-        Título: {art['titulo']}
-        Fuente: {art['fuente']}
-        Texto: {art['texto_completo']}
-        """
-
-        exito=False
-        intentos=0
-
-        while not exito and intentos < 3:
-            try:
-                respuesta = modelo_ia.generate_content(prompt)
-                art["resumen_ia"] = respuesta.text
-                print(f"Resumen completado.")
-                exito = True 
-                time.sleep(4)
-
-            except Exception as e:
-                error_str = str(e)
-                if "429" in error_str or "Quota" in error_str:
-                    intentos += 1
-                    print(f"Límite de Google alcanzado. Esperando 60 segundos para reintentar (Intento {intentos}/3)...")
-                    time.sleep(60)
-                else:
-                    print(f"Error inesperado: {e}")
-                    art["resumen_ia"] = "Error al generar el resumen con IA."
-                    break
-        if not exito and "resumen_ia" not in art:
-            art["resumen_ia"] = "Fallo tras varios reintentos por límites de cuota."
-
-    return lista_articulos
-
-def resumir_en_bloque(lista_articulos, modelo_ia):
-    print("\n" + "="*50)
-    print(f"INICIANDO RESUMEN EN BLOQUE ({len(lista_articulos)} noticias)")
-    print("="*50)
-
-    prompt = """
-    Actúa como un presentador de noticias analítico y neutral conduciendo un boletín informativo. 
-    A continuación te proporciono una lista de noticias completas. Quiero que leas todas y redactes un texto continuo donde hagas un resumen breve, directo y totalmente objetivo de cada una. 
-        
-    Utiliza transiciones naturales, fluidas y profesionales para pasar de una noticia a la otra, tal como se haría en un noticiero de radio o televisión.
-    Es fundamental que, de manera orgánica durante estas transiciones o al inicio de cada tema, menciones explícitamente la fuente de la noticia.
-    
-    AQUÍ TIENES LAS NOTICIAS:
-    \n\n
-    """
-
-    for i, art in enumerate(lista_articulos):
-        prompt += f"--- NOTICIA {i+1} ---\n"
-        prompt += f"Título: {art['titulo']}\n"
-        prompt += f"Fuente: {art['fuente']}\n"
-        prompt += f"Texto completo: {art['texto_completo']}\n\n"
-
-    print("Resumiendo Noticias")
-
-    try:
-        respuesta = modelo_ia.generate_content(prompt)
-        print("¡Resúmenes generado con éxito!")
-        return respuesta.text
-    except Exception as e:
-        print(f"Error al procesar el bloque: {e}")
-        return None
+print("news_fetcher.py actualizado!")
