@@ -1,4 +1,3 @@
-codigo_tts = ""
 import edge_tts
 import asyncio
 import nest_asyncio
@@ -45,7 +44,3 @@ def listar_voces():
     print("Voces disponibles en español:")
     for clave, descripcion in VOCES_DISPONIBLES.items():
         print(f"  {clave:<30} → {descripcion}")
-""
-
-with open("t2s.py", "w", encoding="utf-8") as f:
-    f.write(codigo_tts)
