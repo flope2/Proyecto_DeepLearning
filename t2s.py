@@ -60,7 +60,12 @@ async def _generar_audio_con_subtitulos(texto, ruta_audio, ruta_subtitulos, voz)
     _generar_vtt(palabras, ruta_subtitulos, words_in_cue=4)
 
 
-def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
+def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT, max_chars=3000):
+    # Truncamos el texto si es demasiado largo
+    # 3000 chars ≈ 3-4 minutos de audio, dentro del límite de D-ID
+    if len(texto_boletin) > max_chars:
+        print(f"  Texto truncado de {len(texto_boletin)} a {max_chars} chars para respetar límite D-ID")
+        texto_boletin = texto_boletin[:max_chars]
     os.makedirs(carpeta, exist_ok=True)
 
     timestamp       = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
