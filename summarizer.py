@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import json
 import os
-from datetime import datetime
+from datetime import datetime, time
 
 
 # ─────────────────────────────────────────
@@ -72,7 +72,6 @@ def agrupar_por_temas(lista_articulos, modelo_ia):
 
     except Exception as e:
         print(f"   Error agrupando temas: {e}")
-        print(f"   Respuesta de Gemini: {respuesta.text[:300]}")
         return None
 
 
@@ -87,16 +86,13 @@ def resumir_grupos(grupos, modelo_ia):
     Devuelve el boletín final como texto.
     """
     print("\n-> Generando resúmenes por tema...")
-
     resumenes = []
 
     for i, grupo in enumerate(grupos):
         tema      = grupo["tema"]
         articulos = grupo["articulos"]
-
         print(f"   [{i+1}/{len(grupos)}] {tema} ({len(articulos)} fuentes)...")
 
-        # Construimos el bloque de noticias para este tema
         bloque = ""
         for art in articulos:
             bloque += f"FUENTE: {art['fuente']}\n"
@@ -105,33 +101,45 @@ def resumir_grupos(grupos, modelo_ia):
 
         prompt = f"""
         Actúa como un periodista riguroso y neutral.
-        
         A continuación tienes {len(articulos)} fuentes distintas que cubren el mismo tema: "{tema}".
-        
         {bloque}
-        
         Redacta un párrafo informativo de 4-6 frases que:
         1. Explique claramente qué ha ocurrido
         2. Contraste los distintos enfoques o datos que aporta cada fuente
         3. Use únicamente hechos verificables, sin adjetivos valorativos
         4. Mencione las fuentes de forma natural
         5. Sea comprensible para alguien que no sabe nada del tema
-        
         Escribe directamente el párrafo, sin títulos ni introducciones.
         """
 
-        try:
-            respuesta = modelo_ia.generate_content(prompt)
-            resumen   = respuesta.text.strip()
-            resumenes.append({
-                "tema":    tema,
-                "resumen": resumen,
-                "fuentes": list(dict.fromkeys([a["fuente"] for a in articulos]))  # Fuentes únicas
-            })
-            print(f"      OK ({len(resumen)} chars)")
+        exito    = False
+        intentos = 0
 
-        except Exception as e:
-            print(f"      Error: {e}")
+        while not exito and intentos < 3:
+            try:
+                respuesta = modelo_ia.generate_content(prompt)
+                resumenes.append({
+                    "tema":    tema,
+                    "resumen": respuesta.text.strip(),
+                    "fuentes": list(dict.fromkeys([a["fuente"] for a in articulos]))
+                })
+                print(f"      OK ({len(respuesta.text)} chars)")
+                exito = True
+                time.sleep(4)  # espera entre llamadas para no superar cuota
+
+            except Exception as e:
+                intentos += 1
+                error_str = str(e)
+                if "429" in error_str or "quota" in error_str.lower():
+                    espera = 60
+                    print(f"      Límite de cuota, esperando {espera}s (intento {intentos}/3)...")
+                    time.sleep(espera)
+                else:
+                    print(f"      Error: {e}")
+                    break
+
+        if not exito:
+            print(f"      Saltando tema '{tema}' tras 3 intentos fallidos")
 
     return resumenes
 
