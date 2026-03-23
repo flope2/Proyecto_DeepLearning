@@ -60,33 +60,74 @@ async def _generar_audio_con_subtitulos(texto, ruta_audio, ruta_subtitulos, voz)
     _generar_vtt(palabras, ruta_subtitulos, words_in_cue=4)
 
 
-def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT, max_chars=3000):
-    # Truncamos el texto si es demasiado largo
-    # 3000 chars ≈ 3-4 minutos de audio, dentro del límite de D-ID
-    if len(texto_boletin) > max_chars:
-        print(f"  Texto truncado de {len(texto_boletin)} a {max_chars} chars para respetar límite D-ID")
-        texto_boletin = texto_boletin[:max_chars]
+def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
     os.makedirs(carpeta, exist_ok=True)
 
     timestamp       = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     ruta_audio      = f"{carpeta}/audio_{timestamp}.mp3"
     ruta_subtitulos = f"{carpeta}/subtitulos_{timestamp}.vtt"
 
+    print(f"Generando audio...")
     print(f"  Voz:         {voz}")
     print(f"  Chars:       {len(texto_boletin)}")
     print(f"  Audio:       {ruta_audio}")
-    print(f"  Subtitulos:  {ruta_subtitulos}")
 
-    asyncio.run(_generar_audio_con_subtitulos(
-        texto_boletin, ruta_audio, ruta_subtitulos, voz
-    ))
+    # Generamos solo el audio (sin WordBoundary)
+    async def _solo_audio(texto, ruta, voz):
+        comunicador = edge_tts.Communicate(texto, voz)
+        with open(ruta, "wb") as f:
+            async for chunk in comunicador.stream():
+                if chunk["type"] == "audio":
+                    f.write(chunk["data"])
+
+    asyncio.run(_solo_audio(texto_boletin, ruta_audio, voz))
 
     tamanyo_mb = os.path.getsize(ruta_audio) / (1024 * 1024)
+    print(f"Audio generado! ({tamanyo_mb:.2f} MB)")
+
+    # Generamos subtítulos con Whisper
+    generar_subtitulos_whisper(ruta_audio, ruta_subtitulos)
 
     return ruta_audio, ruta_subtitulos
-
 
 def listar_voces():
     print("Voces disponibles en español:")
     for clave, descripcion in VOCES_DISPONIBLES.items():
         print(f"  {clave:<30} -> {descripcion}")
+
+import whisper
+
+def generar_subtitulos_whisper(ruta_audio, ruta_salida):
+    """
+    Usa Whisper para transcribir el audio y generar el VTT con timestamps.
+    Más preciso que WordBoundary y funciona con cualquier versión de edge-tts.
+    """
+    print("  Generando subtítulos con Whisper...")
+
+    modelo = whisper.load_model("base")
+    result  = modelo.transcribe(ruta_audio, language="es", word_timestamps=True)
+
+    lineas = ["WEBVTT", ""]
+
+    for segmento in result["segments"]:
+        palabras = segmento.get("words", [])
+
+        # Agrupamos de 4 en 4 palabras
+        for i in range(0, len(palabras), 4):
+            bloque = palabras[i : i + 4]
+            if not bloque:
+                continue
+
+            inicio = bloque[0]["start"]
+            fin    = bloque[-1]["end"]
+            texto  = " ".join(p["word"].strip() for p in bloque)
+
+            lineas.append(f"{_segundos_a_vtt(inicio)} --> {_segundos_a_vtt(fin)}")
+            lineas.append(texto)
+            lineas.append("")
+
+    with open(ruta_salida, "w", encoding="utf-8") as f:
+        f.write("\n".join(lineas))
+
+    print(f"  Subtítulos generados: {ruta_salida}")
+    return ruta_salida
