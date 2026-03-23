@@ -126,7 +126,7 @@ def resumir_grupos(grupos, modelo_ia):
             resumenes.append({
                 "tema":    tema,
                 "resumen": resumen,
-                "fuentes": [a["fuente"] for a in articulos]
+                "fuentes": list(dic.fromkeys([a["fuente"] for a in articulos]))  # Fuentes únicas
             })
             print(f"      OK ({len(resumen)} chars)")
 
