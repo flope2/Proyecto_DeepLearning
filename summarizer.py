@@ -232,3 +232,20 @@ def guardar_boletin(texto_boletin, carpeta="boletines"):
 
     print(f"Boletín guardado en: {nombre_archivo}")
     return nombre_archivo
+
+def generar_query_imagen(tema, modelo_ia):
+    """
+    Usa Gemini para generar una query en inglés optimizada
+    para buscar una imagen fotográfica impactante en Pexels.
+    """
+    try:
+        prompt = f"""Dame 3-4 palabras en inglés para buscar en Pexels una fotografía 
+        periodística e impactante que represente este tema de noticias: '{tema}'.
+        Responde SOLO con las palabras, sin explicación ni puntuación."""
+        
+        respuesta = modelo_ia.generate_content(prompt)
+        query     = respuesta.text.strip()
+        print(f"    Query imagen: '{query}'")
+        return query
+    except Exception:
+        return tema  # fallback al tema original
