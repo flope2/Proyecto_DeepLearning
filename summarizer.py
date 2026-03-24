@@ -239,8 +239,8 @@ def generar_query_imagen(tema, modelo_ia):
     para buscar una imagen fotográfica impactante en Pexels.
     """
     try:
-        prompt = f"""Dame 3-4 palabras en inglés para buscar en Pexels una fotografía 
-        periodística e impactante que represente este tema de noticias: '{tema}'.
+        prompt = f"""Dame 2 palabras en inglés para buscar en Pexels una fotografía 
+        RELACIONADA, periodística e impactante que represente este tema de noticias: '{tema}'.
         Responde SOLO con las palabras, sin explicación ni puntuación."""
         
         respuesta = modelo_ia.generate_content(prompt)
