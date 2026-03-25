@@ -176,8 +176,8 @@ def _crear_clip_tema(tema, fuentes, duracion, ruta_imagen):
     draw      = ImageDraw.Draw(img_texto)
 
     try:
-        fuente_tema    = ImageFont.truetype(r"C:\Windows\Fonts\impact.ttf", 65)
-        fuente_fuentes = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf",  34)
+        fuente_tema    = ImageFont.truetype(r"C:\Windows\Fonts\impact.ttf", 62)
+        fuente_fuentes = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf",  27)
     except:
         fuente_tema    = ImageFont.load_default()
         fuente_fuentes = ImageFont.load_default()
