@@ -100,7 +100,7 @@ def resumir_grupos(grupos, modelo_ia):
             bloque += f"TEXTO:  {art['texto_completo'][:1500]}\n\n"
 
         prompt = f"""
-        Actúa como un periodista riguroso y neutral.
+        Actúa como un periodista riguroso y neutral de la plataforma "Al Dia".
         A continuación tienes {len(articulos)} fuentes distintas que cubren el mismo tema: "{tema}".
         {bloque}
         Redacta un párrafo informativo de 4-6 frases que:
@@ -160,7 +160,7 @@ def montar_boletin(resumenes, modelo_ia):
         bloques += f"TEMA {i+1}: {r['tema']}\n{r['resumen']}\n\n"
 
     prompt = f"""
-    Eres un presentador de noticias profesional.
+    Eres un presentador de noticias profesional de "Al Dia".
     
     A continuación tienes {len(resumenes)} bloques informativos.
     Únelos en un único texto continuo añadiendo:
