@@ -109,6 +109,51 @@ def listar_voces():
     for clave, descripcion in VOCES_DISPONIBLES.items():
         print(f"  {clave:<30} -> {descripcion}")
 
+def corregir_nombres(ruta_vtt):
+    """
+    Corrige nombres propios que Whisper transcribe mal.
+    """
+    with open(ruta_vtt, "r", encoding="utf-8") as f:
+        contenido = f.read()
+
+    correcciones = {
+        # Nombre app
+        "al día": "al DIA",
+        "al Día": "al DIA",
+        "al dia": "al DIA",
+        "al Dia": "al DIA",
+        "aldía":  "al DIA",
+        "aldia":  "al DIA",
+        "Al día": "al DIA",
+        "Al Día": "al DIA",
+
+        # RTVE
+        "R.T.V.E.": "RTVE",
+        "R.T.V.E":  "RTVE",
+        "RTE":       "RTVE",
+        "RTO":       "RTVE",
+        "Arteve":   "RTVE",
+        "Irteve":   "RTVE",
+
+        # ABC
+        "A.B.C.": "ABC",
+        "a B .C.": "ABC",
+        "a B.C.": "ABC",
+        "aB.C.": "ABC",
+        "aB .C.": "ABC",
+        "A.B.C":  "ABC",
+        "A. B. C.": "ABC",
+
+    }
+
+    for incorrecto, correcto in correcciones.items():
+        contenido = contenido.replace(incorrecto, correcto)
+
+    with open(ruta_vtt, "w", encoding="utf-8") as f:
+        f.write(contenido)
+
+    print(f"  Nombres corregidos en subtítulos")
+    return ruta_vtt
 import whisper
 
 def generar_subtitulos_whisper(ruta_audio, ruta_salida,
@@ -158,6 +203,7 @@ def generar_subtitulos_whisper(ruta_audio, ruta_salida,
 
     with open(ruta_salida, "w", encoding="utf-8") as f:
         f.write("\n".join(lineas_vtt))
-
+    
+    corregir_nombres(ruta_salida)
     print(f"  Subtítulos generados: {ruta_salida}")
     return ruta_salida

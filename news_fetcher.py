@@ -1,5 +1,8 @@
 import feedparser
 import trafilatura
+from datetime import datetime, timedelta, timezone
+import dateutil.parser
+
 
 FUENTES_ABIERTAS = {
     "ABC":           "https://www.abc.es/rss/feeds/abc_EspanaEspana.xml",
@@ -78,30 +81,56 @@ def process_article(article):
             print(f"    -> Scraping fallido, usando resumen RSS ({len(fallback)} chars)")
     return article
 
+def get_all_news(num_per_source=4, periodo="dia"):
+    """
+    periodo: "hora", "dia", "semana"
+    """
+    print("=" * 50)
+    print(f"RECOPILANDO NOTICIAS — último/a {periodo}")
+    print("=" * 50)
 
-def get_all_news(num_per_source=4):
-    print("=" * 50)
-    print("RECOPILANDO NOTICIAS")
-    print("=" * 50)
+    # Calculamos la fecha límite según el período
+    ahora = datetime.now(tz=timezone.utc)
+    if periodo == "hora":
+        limite = ahora - timedelta(hours=1)
+    elif periodo == "semana":
+        limite = ahora - timedelta(weeks=1)
+    else:  # "dia" por defecto
+        limite = ahora - timedelta(days=1)
 
     all_articles = []
 
-    print("\\n-> Leyendo RSS de todas las fuentes...")
+    print("\n-> Leyendo RSS de todas las fuentes...")
     for source_name, feed_config in TODAS_LAS_FUENTES.items():
         articles = fetch_rss(source_name, feed_config, num_per_source)
         all_articles.extend(articles)
 
-    print(f"\\n-> Extrayendo texto completo ({len(all_articles)} articulos)...")
-    all_articles = [process_article(a) for a in all_articles]
+    # Filtramos por fecha
+    articles_filtrados = []
+    for art in all_articles:
+        try:
+            fecha = dateutil.parser.parse(art["fecha"])
+            if fecha.tzinfo is None:
+                fecha = fecha.replace(tzinfo=timezone.utc)
+            if fecha >= limite:
+                articles_filtrados.append(art)
+        except Exception:
+            # Si no podemos parsear la fecha, incluimos el artículo igualmente
+            articles_filtrados.append(art)
 
-    completos = sum(1 for a in all_articles if a["texto_origen"] == "completo")
-    resumenes = sum(1 for a in all_articles if a["texto_origen"] == "resumen_rss")
+    print(f"\n-> {len(articles_filtrados)}/{len(all_articles)} artículos dentro del período '{periodo}'")
 
-    print("\\n" + "=" * 50)
+    print(f"\n-> Extrayendo texto completo ({len(articles_filtrados)} articulos)...")
+    articles_filtrados = [process_article(a) for a in articles_filtrados]
+
+    completos = sum(1 for a in articles_filtrados if a["texto_origen"] == "completo")
+    resumenes = sum(1 for a in articles_filtrados if a["texto_origen"] == "resumen_rss")
+
+    print("\n" + "=" * 50)
     print(f"RESULTADO FINAL")
-    print(f"  Total articulos:  {len(all_articles)}")
+    print(f"  Total articulos:  {len(articles_filtrados)}")
     print(f"  Texto completo:   {completos}")
     print(f"  Resumen RSS:      {resumenes}")
     print("=" * 50)
 
-    return all_articles
+    return articles_filtrados
