@@ -3,76 +3,137 @@ import json
 import os
 from datetime import datetime, time
 
+# ─────────────────────────────────────────
+# EVALUAR NEUTRALIDAD DE LOS GRUPOS TEMÁTICOS
+# ─────────────────────────────────────────
+
+TENDENCIA_FUENTES = {
+    "ElDiario":      "izquierda",
+    "El Pais":       "centro-izquierda",
+    "La Vanguardia": "centro",
+    "Europa Press":  "centro",
+    "20minutos":     "centro",
+    "RTVE":          "centro",
+    "Antena 3":      "centro-derecha",
+    "El Mundo":      "centro-derecha",
+    "ABC":           "derecha"
+}
+
+# Bloques ideológicos — para publicar un tema debe haber
+# al menos un medio de cada bloque
+BLOQUES_IDEOLOGICOS = {
+    "progresista": {"izquierda", "centro-izquierda"},
+    "centro":      {"centro"},
+    "conservador": {"centro-derecha", "derecha"}
+}
+
+def _evaluar_neutralidad(articulos):
+    """
+    Evalúa si un grupo de artículos tiene suficiente diversidad ideológica.
+    Devuelve (es_neutral, bloques_presentes, descripcion)
+    """
+    fuentes_distintas = set(a["fuente"] for a in articulos)
+    tendencias        = set(
+        TENDENCIA_FUENTES.get(f, "centro") for f in fuentes_distintas
+    )
+
+    # Excepción: si todas las fuentes son de centro se publica
+    # porque el centro no tiene sesgo ideológico por definición
+    todas_centro = all(
+        TENDENCIA_FUENTES.get(a["fuente"], "centro") == "centro"
+        for a in articulos
+    )
+    if todas_centro and len(fuentes_distintas) >= 2:
+        return True, {"centro"}, f"{len(fuentes_distintas)} fuentes de centro"
+
+    bloques_presentes = set()
+    for bloque, tendencias_bloque in BLOQUES_IDEOLOGICOS.items():
+        if tendencias & tendencias_bloque:
+            bloques_presentes.add(bloque)
+
+    # Neutral si hay al menos 2 bloques distintos
+    es_neutral  = len(bloques_presentes) >= 2
+    descripcion = f"{len(fuentes_distintas)} fuentes · bloques: {', '.join(bloques_presentes)}"
+
+    return es_neutral, bloques_presentes, descripcion
 
 # ─────────────────────────────────────────
 # PASO A — AGRUPAR POR TEMAS
 # ─────────────────────────────────────────
 
-def agrupar_por_temas(lista_articulos, modelo_ia):
-    """
-    Le pide a Gemini que agrupe los artículos por tema.
-    Devuelve una lista de grupos, cada uno con su tema y artículos.
-    """
+def agrupar_por_temas(lista_articulos, modelo_ia, min_fuentes=2):
     print("\n-> Agrupando artículos por temas...")
 
-    # Preparamos un listado numerado para que Gemini pueda referenciarlos
     listado = ""
     for i, art in enumerate(lista_articulos):
         listado += f"{i}: [{art['fuente']}] {art['titulo']}\n"
 
     prompt = f"""
     Tienes esta lista de titulares de noticias numerados del 0 al {len(lista_articulos)-1}:
-
     {listado}
-
     Agrupa estos titulares por tema. Noticias que hablen del mismo asunto 
     o estén claramente relacionadas deben ir en el mismo grupo.
     Descarta grupos con un solo artículo salvo que sea un tema muy relevante.
-
     Responde ÚNICAMENTE con un JSON válido con este formato exacto, 
     sin texto adicional, sin bloques de código, sin explicaciones:
     [
-        {{
-            "tema": "Nombre del tema",
-            "indices": [0, 3, 7]
-        }},
-        {{
-            "tema": "Nombre del otro tema",
-            "indices": [1, 5]
-        }}
+        {{"tema": "Nombre del tema", "indices": [0, 3, 7]}},
+        {{"tema": "Nombre del otro tema", "indices": [1, 5]}}
     ]
     """
 
-    try:
-        respuesta = modelo_ia.generate_content(prompt)
-        texto     = respuesta.text.strip()
+    intentos = 0
+    while intentos < 3:
+        try:
+            respuesta      = modelo_ia.generate_content(prompt)
+            texto          = respuesta.text.strip()
+            texto          = texto.replace("```json", "").replace("```", "").strip()
+            grupos_indices = json.loads(texto)
 
-        # Limpiamos por si Gemini añade bloques de código
-        texto = texto.replace("```json", "").replace("```", "").strip()
+            grupos = []
+            for grupo in grupos_indices:
+                articulos_grupo = [lista_articulos[i] for i in grupo["indices"]
+                                   if i < len(lista_articulos)]
+                if articulos_grupo:
+                    grupos.append({
+                        "tema":      grupo["tema"],
+                        "articulos": articulos_grupo
+                    })
 
-        grupos_indices = json.loads(texto)
+            # Filtramos por diversidad ideológica
+            grupos_filtrados = []
+            print(f"   Evaluando neutralidad de {len(grupos)} temas...")
 
-        # Construimos los grupos con los artículos completos
-        grupos = []
-        for grupo in grupos_indices:
-            articulos_grupo = [lista_articulos[i] for i in grupo["indices"]
-                               if i < len(lista_articulos)]
-            if articulos_grupo:
-                grupos.append({
-                    "tema":      grupo["tema"],
-                    "articulos": articulos_grupo
-                })
+            for grupo in grupos:
+                fuentes_distintas = set(a["fuente"] for a in grupo["articulos"])
+                es_neutral, bloques, desc = _evaluar_neutralidad(grupo["articulos"])
 
-        print(f"   {len(grupos)} temas identificados:")
-        for g in grupos:
-            fuentes = [a["fuente"] for a in g["articulos"]]
-            print(f"   - {g['tema']} ({len(g['articulos'])} fuentes: {', '.join(fuentes)})")
+                if len(fuentes_distintas) < min_fuentes:
+                    print(f"   ✗ '{grupo['tema']}' — descartado (solo {len(fuentes_distintas)} fuente)")
+                    continue
 
-        return grupos
+                if not es_neutral:
+                    print(f"   ✗ '{grupo['tema']}' — descartado (sesgo ideológico: {desc})")
+                    continue
 
-    except Exception as e:
-        print(f"   Error agrupando temas: {e}")
-        return None
+                print(f"   ✓ '{grupo['tema']}' — publicado ({desc})")
+                grupos_filtrados.append(grupo)
+
+            print(f"\n   {len(grupos_filtrados)}/{len(grupos)} temas pasan el filtro de neutralidad")
+            return grupos_filtrados
+
+        except Exception as e:
+            intentos += 1
+            error_str = str(e)
+            if "429" in error_str or "quota" in error_str.lower():
+                print(f"   Límite de cuota, esperando 60s (intento {intentos}/3)...")
+                time.sleep(60)
+            else:
+                print(f"   Error agrupando temas: {e}")
+                return None
+
+    print("   Fallo tras 3 intentos.")
+    return None
 
 
 # ─────────────────────────────────────────

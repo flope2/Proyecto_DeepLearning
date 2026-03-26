@@ -24,6 +24,17 @@ TODAS_LAS_FUENTES = {
     **{k: {"url": v, "tipo": "paywall"}  for k, v in FUENTES_PAYWALL.items()}
 }
 
+TENDENCIA_FUENTES = {
+    "ElDiario":      "izquierda",
+    "El Pais":       "centro-izquierda",
+    "La Vanguardia": "centro",
+    "Europa Press":  "centro",
+    "20minutos":     "centro",
+    "RTVE":          "centro",
+    "Antena 3":      "centro-derecha",
+    "El Mundo":      "centro-derecha",
+    "ABC":           "derecha"
+}
 
 def fetch_rss(source_name, feed_config, num_articles=5):
     try:
