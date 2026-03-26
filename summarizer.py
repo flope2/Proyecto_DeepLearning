@@ -74,11 +74,15 @@ def agrupar_por_temas(lista_articulos, modelo_ia, min_fuentes=2):
     Agrupa estos titulares por tema. Noticias que hablen del mismo asunto 
     o estén claramente relacionadas deben ir en el mismo grupo.
     Descarta grupos con un solo artículo salvo que sea un tema muy relevante.
+
+    IMPORTANTE: El nombre de cada tema debe ser corto, máximo 7 palabras,
+    directo y sin artículos innecesarios. 
+    
     Responde ÚNICAMENTE con un JSON válido con este formato exacto, 
     sin texto adicional, sin bloques de código, sin explicaciones:
     [
-        {{"tema": "Nombre del tema", "indices": [0, 3, 7]}},
-        {{"tema": "Nombre del otro tema", "indices": [1, 5]}}
+        {{"tema": "Nombre corto del tema", "indices": [0, 3, 7]}},
+        {{"tema": "Otro tema corto", "indices": [1, 5]}}
     ]
     """
 
