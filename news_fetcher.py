@@ -92,7 +92,7 @@ def process_article(article):
             print(f"    -> Scraping fallido, usando resumen RSS ({len(fallback)} chars)")
     return article
 
-def get_all_news(num_per_source=4, periodo="dia"):
+def get_all_news(num_per_source=1, periodo="dia"):
     """
     periodo: "hora", "dia", "semana"
     """
