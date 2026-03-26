@@ -100,7 +100,7 @@ def resumir_grupos(grupos, modelo_ia):
             bloque += f"TEXTO:  {art['texto_completo'][:1500]}\n\n"
 
         prompt = f"""
-        Actúa como un periodista riguroso y neutral. Comienza el boletin saludado y dando la bienvenida a la plataforma "Al Dia".
+        Actúa como un periodista riguroso y neutral. Comienza el boletin saludado y dando la bienvenida a la plataforma "Al  Día".
         A continuación tienes {len(articulos)} fuentes distintas que cubren el mismo tema: "{tema}".
         {bloque}
         Redacta un párrafo informativo de 4-6 frases que:

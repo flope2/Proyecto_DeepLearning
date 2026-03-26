@@ -24,18 +24,32 @@ def _segundos_a_vtt(segundos):
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
-def _generar_vtt(palabras, ruta_salida, words_in_cue=4):
+def _generar_vtt(palabras, ruta_salida, words_in_cue=10):
     lineas = ["WEBVTT", ""]
 
     for i in range(0, len(palabras), words_in_cue):
         bloque = palabras[i : i + words_in_cue]
+        if not bloque:
+            continue
+
         inicio = bloque[0]["offset"]  / 10_000_000
         ultimo = bloque[-1]
         fin    = (ultimo["offset"] + ultimo["duration"]) / 10_000_000
-        texto  = " ".join(p["text"] for p in bloque)
+
+        # Dividimos el bloque en líneas de 4-5 palabras cada una
+        palabras_bloque = [p["text"] for p in bloque]
+        tam_linea       = 5  # palabras por línea
+        lineas_texto    = []
+
+        for j in range(0, len(palabras_bloque), tam_linea):
+            linea = " ".join(palabras_bloque[j : j + tam_linea])
+            lineas_texto.append(linea)
+
+        # Unimos las líneas con salto de línea real en el VTT
+        texto_final = "\n".join(lineas_texto)
 
         lineas.append(f"{_segundos_a_vtt(inicio)} --> {_segundos_a_vtt(fin)}")
-        lineas.append(texto)
+        lineas.append(texto_final)
         lineas.append("")
 
     with open(ruta_salida, "w", encoding="utf-8") as f:
@@ -57,7 +71,7 @@ async def _generar_audio_con_subtitulos(texto, ruta_audio, ruta_subtitulos, voz)
                     "duration": chunk["duration"]
                 })
 
-    _generar_vtt(palabras, ruta_subtitulos, words_in_cue=4)
+    _generar_vtt(palabras, ruta_subtitulos, words_in_cue=10)
 
 
 def generar_audio(texto_boletin, carpeta="audios", voz=VOZ_DEFAULT):
