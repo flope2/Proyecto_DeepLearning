@@ -127,7 +127,7 @@ def _imagen_fallback():
 # UTILIDAD — WRAP DE TEXTO
 # ─────────────────────────────────────────
 
-def _wrap_text(texto, fuente, ancho_max, draw):
+def _wrap_text(texto, fuente, ancho_max, draw, max_lineas=3):
     """Divide el texto en líneas para que no se salga del ancho."""
     palabras = texto.split()
     lineas   = []
@@ -143,17 +143,30 @@ def _wrap_text(texto, fuente, ancho_max, draw):
                 lineas.append(linea)
             linea = palabra
 
+        # Cortamos si llegamos al máximo de líneas
+        if len(lineas) >= max_lineas:
+            # Añadimos "..." a la última línea y paramos
+            if lineas:
+                lineas[-1] = lineas[-1] + "..."
+            return lineas
+
     if linea:
         lineas.append(linea)
 
     return lineas
-
 
 # ─────────────────────────────────────────
 # CLIP POR TEMA — versión TikTok
 # ─────────────────────────────────────────
 
 def _crear_clip_tema(tema, fuentes, duracion, ruta_imagen):
+    
+    # Antes de dibujar el tema, truncamos el titulo si es muy largo
+    MAX_PALABRAS_TITULO = 8
+    palabras_tema = tema.split()
+    if len(palabras_tema) > MAX_PALABRAS_TITULO:
+        tema = " ".join(palabras_tema[:MAX_PALABRAS_TITULO]) + "..."
+    
     if ruta_imagen and os.path.exists(ruta_imagen):
         arr_imagen = _preparar_imagen(ruta_imagen)
     else:
@@ -183,7 +196,7 @@ def _crear_clip_tema(tema, fuentes, duracion, ruta_imagen):
         fuente_fuentes = ImageFont.load_default()
 
     # Tema con wrap
-    lineas   = _wrap_text(tema.upper(), fuente_tema, ANCHO - 80, draw)
+    lineas = _wrap_text(tema.upper(), fuente_tema, ANCHO - 80, draw, max_lineas=3)
     y_actual = 120
 
     for linea in lineas:
