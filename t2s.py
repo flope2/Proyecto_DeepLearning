@@ -111,37 +111,53 @@ def listar_voces():
 
 import whisper
 
-def generar_subtitulos_whisper(ruta_audio, ruta_salida):
+def generar_subtitulos_whisper(ruta_audio, ruta_salida,
+                                palabras_por_bloque=10,
+                                palabras_por_linea=5):
     """
-    Usa Whisper para transcribir el audio y generar el VTT con timestamps.
-    Más preciso que WordBoundary y funciona con cualquier versión de edge-tts.
+    palabras_por_bloque: cuántas palabras por subtítulo en total
+    palabras_por_linea:  cuántas palabras por línea dentro del subtítulo
+    Con los valores por defecto: bloques de 10 palabras en 2 líneas de 5
     """
     print("  Generando subtítulos con Whisper...")
 
     modelo = whisper.load_model("base")
     result  = modelo.transcribe(ruta_audio, language="es", word_timestamps=True)
 
-    lineas = ["WEBVTT", ""]
+    lineas_vtt = ["WEBVTT", ""]
 
+    # Recogemos todas las palabras con sus timestamps
+    todas_palabras = []
     for segmento in result["segments"]:
-        palabras = segmento.get("words", [])
+        for p in segmento.get("words", []):
+            todas_palabras.append(p)
 
-        # Agrupamos de 4 en 4 palabras
-        for i in range(0, len(palabras), 4):
-            bloque = palabras[i : i + 4]
-            if not bloque:
-                continue
+    # Agrupamos en bloques de palabras_por_bloque
+    for i in range(0, len(todas_palabras), palabras_por_bloque):
+        bloque = todas_palabras[i : i + palabras_por_bloque]
+        if not bloque:
+            continue
 
-            inicio = bloque[0]["start"]
-            fin    = bloque[-1]["end"]
-            texto  = " ".join(p["word"].strip() for p in bloque)
+        inicio = bloque[0]["start"]
+        fin    = bloque[-1]["end"]
 
-            lineas.append(f"{_segundos_a_vtt(inicio)} --> {_segundos_a_vtt(fin)}")
-            lineas.append(texto)
-            lineas.append("")
+        # Dividimos el bloque en líneas de palabras_por_linea palabras
+        palabras_texto = [p["word"].strip() for p in bloque]
+        lineas_texto   = []
+
+        for j in range(0, len(palabras_texto), palabras_por_linea):
+            linea = " ".join(palabras_texto[j : j + palabras_por_linea])
+            lineas_texto.append(linea)
+
+        # Unimos con salto de línea real
+        texto_final = "\n".join(lineas_texto)
+
+        lineas_vtt.append(f"{_segundos_a_vtt(inicio)} --> {_segundos_a_vtt(fin)}")
+        lineas_vtt.append(texto_final)
+        lineas_vtt.append("")
 
     with open(ruta_salida, "w", encoding="utf-8") as f:
-        f.write("\n".join(lineas))
+        f.write("\n".join(lineas_vtt))
 
     print(f"  Subtítulos generados: {ruta_salida}")
     return ruta_salida
