@@ -124,8 +124,11 @@ def corregir_nombres(ruta_vtt):
         "al Dia": "al DIA",
         "aldía":  "al DIA",
         "aldia":  "al DIA",
+        "Aldia":  "al DIA",
+        "Aldía": "al DIA",
         "Al día": "al DIA",
         "Al Día": "al DIA",
+        "Al Pía": "al DIA",
 
         # RTVE
         "R.T.V.E.": "RTVE",
