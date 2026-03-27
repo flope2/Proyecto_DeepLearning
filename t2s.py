@@ -146,6 +146,7 @@ def corregir_nombres(ruta_vtt):
         "aB .C.": "ABC",
         "A.B.C":  "ABC",
         "A. B. C.": "ABC",
+        "a veces": "ABC"
 
     }
 
